@@ -1,8 +1,6 @@
 #Code created by David Encarnacion with assistance from ChatGPT
 #Last Updated: 11/4/2024 10:14
 
-#HAHAHA IT WORKS
-
 from PCB_class import PCB
 import time
 

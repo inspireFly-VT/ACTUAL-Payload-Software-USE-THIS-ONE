@@ -102,10 +102,16 @@ class PCB:
                 break
 
     def send_chunks(self, jpg_bytes):
-        chunksize = 66
+        image_Bytes = length.jpg_bytes	#bytes
+        chunksize = 66	#bytes/chunk
+        
+        chunks_needed = ceil(image_Bytes/chunksize)	#chunks, rounded up
+        
         message = self.com1.overhead_read()
 
         if message != "Wrong" and message != "No image data received":
+            #TODO: Get rid of coundary setting functionality, just 
+            #send the necessary amount of chunks in addition to the crc encoding
             a, b = map(int, message.split())
             for i in range(a, b + 1):
                 print("Chunk #", i)

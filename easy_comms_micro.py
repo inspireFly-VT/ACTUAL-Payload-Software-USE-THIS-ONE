@@ -44,6 +44,10 @@ class Easy_comms:
         return crc
 
     #Read bytes that has been sent across, strips the overhead and CRC also
+    #Must read image data sent from the FCB
+    #TODO: Implement bidirectional communication between
+    #PCB and FCB for the purposes of displaying images sent to the FCB and sending
+    #images taken by the PCB back down to ground 
     def read_bytes(self, lowerchunk, upperchunk)-> bytes:
         message = b""
         data = b""

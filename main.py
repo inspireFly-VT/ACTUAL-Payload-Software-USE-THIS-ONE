@@ -9,6 +9,11 @@ pcb = PCB()
 while True:
     
     print("Displaying image...")
+    #The image displayed, for the purposes of the
+    #mission, must be modifyable to pull the latest
+    #image uploaded by the ground station
+    #TODO: Replace 'RaspberryPiWB128x128.raw' with a variable
+    #directory, pulled from the FCB memory
     pcb.display_image('RaspberryPiWB128x128.raw')
     
     count = (pcb.last_num + 2) - pcb.last_num

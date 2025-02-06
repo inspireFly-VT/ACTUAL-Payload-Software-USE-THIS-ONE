@@ -11,10 +11,10 @@ import os
 class PCB:
     def __init__(self):
         # Initialize GPIO3 as an output pin
-        self.pin3 = Pin(12, Pin.OUT)
+        #self.pin3 = Pin(12, Pin.OUT)
         # Set GPIO3 to high
 #         pin3.value(1)
-        self.pin3.value(0)
+        #self.pin3.value(0)
         self.spi_display = SPI(0, baudrate=14500000, sck=Pin(18), mosi=Pin(19))
         self.display = Display(self.spi_display, dc=Pin(14), cs=Pin(21), rst=Pin(7))
         
@@ -68,7 +68,7 @@ class PCB:
 
     def TakeMultiplePictures(self, imageName, resolution, interval, count):
         sleep_ms(700)
-        self.pin3(0)
+        #self.pin3(0)
         sleep_ms(700)
         self.cam.resolution = resolution
         for x in range(count):
@@ -81,7 +81,7 @@ class PCB:
                 except OSError:
                     print(f"Error removing file: {endImageName}.jpg")
             sleep_ms(interval)
-        self.pin3(1)
+        #self.pin3(1)
 
     def display_image(self, image_path):
         self.display.draw_image(image_path, 0, 0, 128, 128)

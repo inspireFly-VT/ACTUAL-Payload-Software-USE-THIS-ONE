@@ -7,14 +7,15 @@ from machine import Pin, SPI, reset
 from Camera import *
 from easy_comms_micro import Easy_comms
 import os
+import math
 
 class PCB:
     def __init__(self):
         # Initialize GPIO3 as an output pin
-        #self.pin3 = Pin(12, Pin.OUT)
+        self.pin3 = Pin(12, Pin.OUT)
         # Set GPIO3 to high
 #         pin3.value(1)
-        #self.pin3.value(0)
+        self.pin3.value(0)
         self.spi_display = SPI(0, baudrate=14500000, sck=Pin(18), mosi=Pin(19))
         self.display = Display(self.spi_display, dc=Pin(14), cs=Pin(21), rst=Pin(7))
         
@@ -103,27 +104,32 @@ class PCB:
 
     def send_chunks(self, jpg_bytes):
         chunksize = 66
-        message = self.com1.overhead_read()
+        
+        num_Chunks = math.ceil(len(jpg_bytes)/chunksize)
+        
+        print("Number of Chunks: ", num_Chunks)
+        
+#         message = self.com1.overhead_read()
 
-        if message != "Wrong" and message != "No image data received":
-            a, b = map(int, message.split())
-            for i in range(a, b + 1):
-                print("Chunk #", i)
-                self.onboard_LED.off()
-                chunk = jpg_bytes[i * chunksize:(i + 1) * chunksize]
-                chunknum = i.to_bytes(2, 'little')
-                chunk = chunknum + chunk
-                
-                crctagb = self.com1.calculate_crc16(chunk)
-                chunk += crctagb.to_bytes(2, 'little')
-                
-                self.onboard_LED.on()
+#         if message != "Wrong" and message != "No image data received":
+#             a, b = map(int, message.split())
+        for i in range(0, num_Chunks + 1):
+            print("Chunk #", i)
+            self.onboard_LED.off()
+            chunk = jpg_bytes[i * chunksize:(i + 1) * chunksize]
+            chunknum = i.to_bytes(2, 'little')
+            chunk = chunknum + chunk
+            
+            crctagb = self.com1.calculate_crc16(chunk)
+            chunk += crctagb.to_bytes(2, 'little')
+            
+            self.onboard_LED.on()
+            self.com1.send_bytes(chunk)
+            print(len(chunk))
+            while (recievecheck := self.com1.overhead_read()) == "Chunk has an error.":
                 self.com1.send_bytes(chunk)
-                print(len(chunk))
-                while (recievecheck := self.com1.overhead_read()) == "Chunk has an error.":
-                    self.com1.send_bytes(chunk)
-                self.onboard_LED.off()
-                
-            print("All requested chunks sent successfully.")
-        elif message == "No image data received":
-            print("No image data received by 'a' side. Ending chunk transfer process.")
+            self.onboard_LED.off()
+            
+        print("All requested chunks sent successfully.")
+#     if message == "No image data received":
+#         print("No image data received by 'a' side. Ending chunk transfer process.")

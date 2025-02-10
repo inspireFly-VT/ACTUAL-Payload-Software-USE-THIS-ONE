@@ -109,14 +109,15 @@ class PCB:
         
         print("Number of Chunks: ", num_Chunks)
         
-        self.com1.overhead_send(num_Chunks + 'chunks being sent, please acknowledge...')
+        self.com1.overhead_send(f"{num_Chunks} chunks being sent, please acknowledge...")
         
+        command = self.com1.overhead_read()
 #         message = self.com1.overhead_read()
 
 #         if message != "Wrong" and message != "No image data received":
 #             a, b = map(int, message.split())
         if command.lower() == 'acknowledge':  
-            for i in range(0, num_Chunks + 1):
+            for i in range(num_Chunks + 1):
                 print("Chunk #", i)
                 self.onboard_LED.off()
                 chunk = jpg_bytes[i * chunksize:(i + 1) * chunksize]

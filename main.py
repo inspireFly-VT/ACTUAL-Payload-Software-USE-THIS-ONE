@@ -8,6 +8,8 @@ pcb = PCB()
 
 while True:
     
+    pcb.TakePicture('PicForLarsen10', '640x480')
+    
     print("Displaying image...")
     #The image displayed, for the purposes of the
     #mission, must be modifyable to pull the latest
@@ -26,4 +28,3 @@ while True:
 
     print("Initiating data transmission with flight computer...")
     pcb.communicate_with_fcb(jpg_bytes)
-

@@ -26,7 +26,7 @@ class PCB:
         
         #self.pin3.value(1)
         self.com1 = Easy_comms(uart_id=1, baud_rate=9600)
-        self.com1.start()
+#         self.com1.start()
         
         
         self.last_num = self.get_last_num()
@@ -104,37 +104,55 @@ class PCB:
 
     def send_chunks(self, jpg_bytes):
         chunksize = 66
-        
-        num_Chunks = math.ceil(len(jpg_bytes)/chunksize)
+        num_Chunks = math.ceil(len(jpg_bytes) / chunksize)
         
         print("Number of Chunks: ", num_Chunks)
-        
-        self.com1.overhead_send(f"{num_Chunks} chunks being sent, please acknowledge...")
-        
-        command = self.com1.overhead_read()
-#         message = self.com1.overhead_read()
 
-#         if message != "Wrong" and message != "No image data received":
-#             a, b = map(int, message.split())
-        if command.lower() == 'acknowledge':  
-            for i in range(num_Chunks + 1):
+        # Step 1: Send the num_Chunks value to the FCB before starting to send the actual chunks
+        num_chunks_message = str(num_Chunks)
+        self.com1.overhead_send(num_chunks_message)
+        print(f"Sent num_Chunks: {num_Chunks}")
+        
+#         # Step 2: Wait for acknowledgment from FCB that it’s ready to receive data
+#         acknowledgment = self.com1.wait_for_acknowledgment()  # Assuming wait_for_acknowledgment is implemented
+#         if not acknowledgment:
+#             print("Error: No acknowledgment received. Aborting data transfer.")
+#             return
+        sleep_ms(100)
+        print(self.com1.overhead_read())
+
+        if self.com1.overhead_read() == "acknowledge":
+            # Step 3: Start sending the actual chunks
+            for i in range(0, num_Chunks):  # Loop from 0 to num_Chunks - 1
                 print("Chunk #", i)
                 self.onboard_LED.off()
+                
+                # Create the chunk for the current chunk index
                 chunk = jpg_bytes[i * chunksize:(i + 1) * chunksize]
-                chunknum = i.to_bytes(2, 'little')
+                chunknum = i.to_bytes(2, 'little')  # Chunk number as 2 bytes
                 chunk = chunknum + chunk
                 
+                # Add CRC tag to the chunk
                 crctagb = self.com1.calculate_crc16(chunk)
                 chunk += crctagb.to_bytes(2, 'little')
                 
                 self.onboard_LED.on()
-                self.com1.send_bytes(chunk)
-                print(len(chunk))
-                while (recievecheck := self.com1.overhead_read()) == "Chunk has an error.":
-                    self.com1.send_bytes(chunk)
-                self.onboard_LED.off()
+                self.com1.send_bytes(chunk)  # Send chunk
                 
+                print(f"Sent chunk of length {len(chunk)} bytes")
+                
+                # Retry mechanism for error handling
+                retry_limit = 5  # Set a limit on retries to avoid infinite loops
+                retries = 0
+                while (recievecheck := self.com1.overhead_read()) == "Chunk has an error.":
+                    if retries >= retry_limit:
+                        print(f"Error sending chunk {i}, retry limit reached. Skipping.")
+                        break
+                    retries += 1
+                    self.com1.send_bytes(chunk)  # Resend the chunk if error detected
+                    print(f"Retrying chunk {i}, attempt {retries}")
+                
+                self.onboard_LED.off()
+
             print("All requested chunks sent successfully.")
-#     if message == "No image data received":
-#         print("No image data received by 'a' side. Ending chunk transfer process.")
 

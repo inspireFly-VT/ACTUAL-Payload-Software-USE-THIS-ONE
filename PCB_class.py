@@ -45,6 +45,7 @@ class PCB:
             self.onboard_LED.on()
             finalImageName = f"{imageName}.jpg"
             self.cam.resolution = resolution
+#             self.cam.quality = 2
             sleep_ms(500)
             
             # Try to capture the image and reset if it takes too long

@@ -8,7 +8,7 @@ pcb = PCB()
 
 while True:
     
-    pcb.TakePicture('PicForLarsen10', '640x480')
+#     pcb.TakePicture('PicForLarsen10', '640x480')
     
     print("Displaying image...")
     #The image displayed, for the purposes of the
@@ -20,7 +20,7 @@ while True:
     
     count = (pcb.last_num + 2) - pcb.last_num
     print("Initiating TakeMultiplePictures...")
-    pcb.TakeMultiplePictures('inspireFly_Capture_', '640x480', 500, count)
+    pcb.TakeMultiplePictures('inspireFly_Capture_', '320x240', 1, count)
 
     file_path = f"inspireFly_Capture_{pcb.last_num}.jpg"
     with open(file_path, "rb") as file:

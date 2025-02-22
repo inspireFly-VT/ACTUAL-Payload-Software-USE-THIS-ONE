@@ -45,6 +45,7 @@ class PCB:
             self.onboard_LED.on()
             finalImageName = f"{imageName}.jpg"
             self.cam.resolution = resolution
+#             self.cam.quality = 2
             sleep_ms(500)
             
             # Try to capture the image and reset if it takes too long
@@ -104,7 +105,7 @@ class PCB:
 
     def send_chunks(self, jpg_bytes):
         chunksize = 66
-        num_Chunks = math.ceil(len(jpg_bytes) / chunksize)
+        num_Chunks = 29 #math.ceil(len(jpg_bytes) / chunksize)
         
         print("Number of Chunks: ", num_Chunks)
 

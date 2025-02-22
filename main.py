@@ -20,7 +20,11 @@ while True:
     
     count = (pcb.last_num + 2) - pcb.last_num
     print("Initiating TakeMultiplePictures...")
+<<<<<<< HEAD
     pcb.TakeMultiplePictures('inspireFly_Capture_', '640x480', 1, count)
+=======
+    pcb.TakeMultiplePictures('inspireFly_Capture_', '320x240', 1, count)
+>>>>>>> 1cac4a200556578113660a2f31cafafd00ecd954
 
     file_path = f"inspireFly_Capture_{pcb.last_num}.jpg"
     with open(file_path, "rb") as file:

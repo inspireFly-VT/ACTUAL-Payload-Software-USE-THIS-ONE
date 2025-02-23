@@ -9,6 +9,25 @@ from easy_comms_micro import Easy_comms
 import os
 import math
 
+# inspireFly commands
+commands = {
+    b'\x10':    'noop',
+    b'\x11': 'hreset',   # new
+    b'\x12': 'shutdown',
+    b'\x13':    'query',    # new
+    #b'\x14': 'exec_cmd',   # not getting implemented
+    b'\x15': 'joke_reply',
+    b'\x16': 'send_SOH',
+    b'\x31': 'take_pic',
+    b'\x32': 'send_pic',
+    b'\x34': 'receive_pic',
+    b'\x1C': 'mag_on',
+    b'\x1D': 'mag_off',
+    b'\x1E': 'burn_on',
+    b'\x1F': 'heat_on',
+}
+
+
 class PCB:
     def __init__(self):
         # Initialize GPIO3 as an output pin
@@ -156,4 +175,14 @@ class PCB:
                 self.onboard_LED.off()
 
             print("All requested chunks sent successfully.")
+            
+    def wait_for_command(self):
+        """Continuously check for a command from the FCB before proceeding."""
+        while True:
+            print("Checking for command from FCB...")
+            command = self.com1.overhead_read()  # Assumes this method reads incoming UART data
+            if command == commands:
+                print(f"Received command: {command}")
+                break
+            time.sleep(0.5)  # Adjust polling interval as needed
 

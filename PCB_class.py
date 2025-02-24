@@ -8,6 +8,8 @@ from Camera import *
 from easy_comms_micro import Easy_comms
 import os
 import math
+from lib import sdcard
+
 
 # inspireFly commands
 commands = {
@@ -21,10 +23,6 @@ commands = {
     b'\x31': 'take_pic',
     b'\x32': 'send_pic',
     b'\x34': 'receive_pic',
-    b'\x1C': 'mag_on',
-    b'\x1D': 'mag_off',
-    b'\x1E': 'burn_on',
-    b'\x1F': 'heat_on',
 }
 
 
@@ -38,12 +36,28 @@ class PCB:
         self.spi_display = SPI(0, baudrate=14500000, sck=Pin(18), mosi=Pin(19))
         self.display = Display(self.spi_display, dc=Pin(14), cs=Pin(21), rst=Pin(7))
         
-        self.spi_camera = SPI(1, sck=Pin(10), miso=Pin(8), mosi=Pin(11), baudrate=8000000)
-        self.cs = Pin(9, Pin.OUT)
-        self.onboard_LED = Pin(25, Pin.OUT)
-        self.cam = Camera(self.spi_camera, self.cs)
+#         self.spi_camera = SPI(1, sck=Pin(10), miso=Pin(8), mosi=Pin(11), baudrate=8000000)
+#         self.cs = Pin(9, Pin.OUT)
+#         self.onboard_LED = Pin(25, Pin.OUT)
+#         self.cam = Camera(self.spi_camera, self.cs)
         
-        #self.pin3.value(1)
+        # Initialize SD card (using SPI pins)
+        print("Initializing SD card...")
+        try:
+            # Set up the SD card, SPI(0) and Pin(17) for CS (chip select)
+            sd = sdcard.SDCard(SPI(0), Pin(17))
+            
+            # Give the card a moment to settle
+            time.sleep(1)
+            
+            # Mount the SD card at '/sd'
+            os.mount(sd, '/sd')
+            print("SD card mounted successfully.")
+#             print("Files:", os.listdir('/'))
+        except Exception as e:
+            print(f"Error initializing SD card: {e}")
+            
+#         self.pin3.value(1)
         self.com1 = Easy_comms(uart_id=1, baud_rate=9600)
 #         self.com1.start()
         
@@ -178,11 +192,93 @@ class PCB:
             
     def wait_for_command(self):
         """Continuously check for a command from the FCB before proceeding."""
+        command = b'\x31'
         while True:
             print("Checking for command from FCB...")
-            command = self.com1.overhead_read()  # Assumes this method reads incoming UART data
-            if command == commands:
-                print(f"Received command: {command}")
-                break
+#             command = self.com1.overhead_read()  # Assumes this method reads incoming UART data
+            print(command)
+            # Check if the command is in the predefined 'commands' dictionary
+            if command in commands:
+                command_name = commands[command]  # Get the command name from the dictionary
+                print(f"Received command: {command_name}")
+
+                # Handle each command with a corresponding action
+                if command_name == 'noop':
+                    pass  # No operation, do nothing
+                    
+                elif command_name == 'hreset':
+                    # Reset hardware
+                    print("Resetting hardware.")
+                    # Add reset logic here
+                    
+                elif command_name == 'shutdown':
+                    # Shutdown system
+                    print("Shutting down.")
+                    # Add shutdown logic here
+                    
+                elif command_name == 'query':
+                    # Handle query
+                    print("Processing query.")
+                    # Add query logic here
+                    
+                elif command_name == 'joke_reply':
+                    # Respond with a joke
+                    print("Responding with a joke.")
+                    # Add joke reply logic here
+                    
+                elif command_name == 'send_SOH':
+                    # Send start of header
+                    print("Sending start of header.")
+                    # Add send SOH logic here
+                    
+                elif command_name == 'take_pic':
+                    # Take a picture
+                    print("Taking a picture.")
+                    # Call function to take a picture, passing resolution and image name
+#                     pcb.TakePicture('PicForLarsen10', '640x480')
+
+                    print("Displaying image...")
+                    # Display an image; use a variable or directory for dynamic image name
+                    # TODO: Replace with actual dynamic directory from FCB memory
+                    self.display_image('/sd/orange.raw')
+
+#                     # Calculate count of multiple pictures to take
+#                     count = (self.last_num + 2) - self.last_num
+#                     print("Initiating TakeMultiplePictures...")
+#                     self.TakeMultiplePictures('inspireFly_Capture_', '320x240', 1, count)
+                    
+                    command = b'\x32'
+
+                    
+                elif command_name == 'send_pic':
+                    # Send a picture
+                    print("Sending picture.")
+                    
+                    # Prepare the file path for the image to send
+                    file_path = f"inspireFly_Capture_{self.last_num-1}.jpg"
+                    
+                    try:
+                        # Try to open the file to check if it exists
+                        with open(file_path, "rb") as file:
+                            jpg_bytes = file.read()
+
+                        print("File found, initiating data transmission with flight computer...")
+                        # Initiate communication with flight computer and send image data
+                        self.communicate_with_fcb(jpg_bytes)
+                        
+                    except OSError:
+                        # If the file doesn't exist, catch the error and print a message
+                        print(f"Error: File {file_path} does not exist. Cannot send picture.")
+
+                                    
+                elif command_name == 'receive_pic':
+                    # Receive a picture
+                    print("Receiving picture.")
+                    # Add picture receiving logic here
+                    
+
+            else:
+                print(f"Unknown command received: {command}")
+
             time.sleep(0.5)  # Adjust polling interval as needed
 

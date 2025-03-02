@@ -6,25 +6,25 @@ import time
 
 pcb = PCB()
 
-while True:
-    
+pcb.wait_for_command()
+
 #     pcb.TakePicture('PicForLarsen10', '640x480')
-    
-    print("Displaying image...")
-    #The image displayed, for the purposes of the
-    #mission, must be modifyable to pull the latest
-    #image uploaded by the ground station
-    #TODO: Replace 'RaspberryPiWB128x128.raw' with a variable
-    #directory, pulled from the FCB memory
-    pcb.display_image('RaspberryPiWB128x128.raw')
-    
-    count = (pcb.last_num + 2) - pcb.last_num
-    print("Initiating TakeMultiplePictures...")
-    pcb.TakeMultiplePictures('inspireFly_Capture_', '320x240', 1, count)
 
-    file_path = f"inspireFly_Capture_{pcb.last_num}.jpg"
-    with open(file_path, "rb") as file:
-        jpg_bytes = file.read()
+print("Displaying image...")
+#The image displayed, for the purposes of the
+#mission, must be modifyable to pull the latest
+#image uploaded by the ground station
+#TODO: Replace 'RaspberryPiWB128x128.raw' with a variable
+#directory, pulled from the FCB memory
+# pcb.display_image('RaspberryPiWB128x128.raw')
 
-    print("Initiating data transmission with flight computer...")
-    pcb.communicate_with_fcb(jpg_bytes)
+# count = (pcb.last_num + 2) - pcb.last_num
+# print("Initiating TakeMultiplePictures...")
+# 
+# pcb.TakeMultiplePictures('inspireFly_Capture_', '320x240', 1, count)
+# file_path = f"inspireFly_Capture_{pcb.last_num}.jpg"
+# with open(file_path, "rb") as file:
+#     jpg_bytes = file.read()
+
+# print("Initiating data transmission with flight computer...")
+# pcb.communicate_with_fcb(jpg_bytes)

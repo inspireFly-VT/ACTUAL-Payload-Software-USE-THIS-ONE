@@ -40,25 +40,29 @@ class Easy_comms:
     
     # Read string messages from UART
     def overhead_read(self) -> str:
-        new_line = False
         message = ""
-        while not new_line:
+        
+        while True:
             if self.uart.any() > 0:
                 try:
                     raw_data = self.uart.read()
-                    decoded_data = raw_data.decode('utf-8')  # Decode without 'errors' argument
-                    print(f"Decoded Data: {decoded_data}")
-                    message += decoded_data
+                    if raw_data:  # Ensure data is not None
+                        decoded_data = raw_data.decode('utf-8')  # Decode safely
+                        print(f"Decoded Data: {decoded_data}")
+                        message += decoded_data
+                    else:
+                        continue  # Skip if read() returns None
+                    
+                    if '\n' in message:  # Check if message is complete
+                        message = message.split('\n', 1)[0]  # Extract only the first message
+                        print(f"Received message: {message}")
+                        return message
                 except UnicodeError:
                     print("Unicode error encountered. Skipping invalid characters.")
-                    continue  # Skip this iteration if there's a decoding issue
-                
-                if '\n' in message:
-                    new_line = True
-                    print(f"Received message: {message.strip()}")
-                    message = message.strip('\n')  # Remove the newline character
-                    return message
-        return None
+                    continue  # Skip iteration if decoding fails
+
+            time.sleep(0.05)  # Prevents CPU overuse in an infinite loop
+
 
     # Wait for acknowledgment from the FCB
     def wait_for_acknowledgment(self, timeout=30):

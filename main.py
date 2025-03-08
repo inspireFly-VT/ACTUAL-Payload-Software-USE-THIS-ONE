@@ -17,7 +17,7 @@ pcb.wait_for_command()
 #TODO: Replace 'RaspberryPiWB128x128.raw' with a variable
 #directory, pulled from the FCB memory
 # while True:
-#     pcb.display_image('RaspberryPiWB128x128.raw')
+# pcb.display_image('/sd/potato.raw')
 # 
 #     count = (pcb.last_num + 2) - pcb.last_num
 #     print("Initiating TakeMultiplePictures...")

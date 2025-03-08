@@ -14,17 +14,18 @@ except ImportError:
     from lib import sdcard
     
 # inspireFly commands
+#Fix commands for how they are sent over by the FCB
 commands = {
-    b'\x10':    'noop',
-    b'\x11': 'hreset',   # new
-    b'\x12': 'shutdown',
-    b'\x13':    'query',    # new
-    #b'\x14': 'exec_cmd',   # not getting implemented
-    b'\x15': 'joke_reply',
-    b'\x16': 'send_SOH',
-    '1' : 'take_pic',
-    b'\x32': 'send_pic',
-    b'\x34': 'receive_pic',
+    b'\x10'	:    'noop',		# no operation
+    b'\x11'	: 'hreset',   		# hardware reset (new)
+    b'\x12'	: 'shutdown',		# shutdown payload
+    b'\x13'	:    'query',    	# new
+    #b'\x14': 'exec_cmd',   	# not getting implemented
+    b'\x15'	: 'joke_reply',		# joke reply
+    b'\x16'	: 'send_SOH',		#send state of health
+    '1' 	: 'take_pic',		#take a pic
+    '2'	: 'send_pic',		#send a pic
+    b'\x34'	: 'receive_pic'		#receive a pic
 }
 
 dog = Watchdog()
@@ -34,7 +35,7 @@ class PCB:
         dog.pet()
         self.cam_Pin = Pin(12, Pin.OUT, value=0)
         self.spi_display = SPI(0, baudrate=14500000, sck=Pin(18), mosi=Pin(19))
-        self.display = Display(self.spi_display, dc=Pin(14), cs=Pin(21), rst=Pin(7))
+        self.display = Display(self.spi_display, dc=Pin(14), cs=Pin(21), rst=Pin(22))
         
         self.spi_camera = SPI(1, sck=Pin(10), miso=Pin(8), mosi=Pin(11), baudrate=8000000)
         self.cs = Pin(9, Pin.OUT)
@@ -104,7 +105,13 @@ class PCB:
 #         self.cam_Pin(1)
             
     def display_image(self, image_path):
-        self.display.draw_image(image_path, 0, 0, 128, 128)
+        try:
+            print(f"Attempting to display {image_path}")
+            self.display.draw_image(image_path, 0, 0, 128, 128)
+            print("Image displayed successfully")
+        except Exception as e:
+            print(f"Error displaying image: {e}")
+
 
     def communicate_with_fcb(self, jpg_bytes):
         self.com1.overhead_send('ping')
@@ -116,6 +123,8 @@ class PCB:
                 print('Sending acknowledgment...')
                 self.com1.overhead_send('acknowledge')
                 print('Acknowledgment sent, commencing data transfer...')
+#                 time.sleep(2)
+                self.com1.wait_for_acknowledgment()
                 time.sleep(2)
                 self.send_chunks(jpg_bytes)
             elif command.lower() == 'end':
@@ -125,38 +134,41 @@ class PCB:
     def send_chunks(self, jpg_bytes):
         chunksize = 66
         num_chunks = math.ceil(len(jpg_bytes) / chunksize)
+        print(jpg_bytes)
         print(f"Number of Chunks: {num_chunks}")
         
         self.com1.overhead_send(str(num_chunks))
         print(f"Sent num_Chunks: {num_chunks}")
-        time.sleep(0.1)
+        time.sleep(2)
         
-        if self.com1.overhead_read() == "acknowledge":
-            for i in range(num_chunks):
-                print(f"Chunk #{i}")
-                self.onboard_LED.off()
-                
-                chunk = jpg_bytes[i * chunksize:(i + 1) * chunksize]
-                chunknum = i.to_bytes(2, 'little')
-                chunk = chunknum + chunk
-                chunk += self.com1.calculate_crc16(chunk).to_bytes(2, 'little')
-                
-                self.onboard_LED.on()
+#         if self.com1.overhead_read() == "acknowledge":
+        for i in range(num_chunks):
+            print(f"Chunk #{i}")
+            self.onboard_LED.off()
+            
+            chunk = jpg_bytes[i * chunksize:(i + 1) * chunksize]
+            chunknum = i.to_bytes(2, 'little')
+            chunk = chunknum + chunk
+            chunk += self.com1.calculate_crc16(chunk).to_bytes(2, 'little')
+            
+            self.onboard_LED.on()
+            self.com1.send_bytes(chunk)
+            print(f"Sent chunk of length {len(chunk)} bytes")
+            time.sleep(1.5)
+            
+            retries = 0
+            retry_limit = 5
+            while (receive_check := self.com1.overhead_read()) == "Chunk has an error." and retries < retry_limit:
+                retries += 1
                 self.com1.send_bytes(chunk)
-                print(f"Sent chunk of length {len(chunk)} bytes")
-                
-                retries = 0
-                retry_limit = 5
-                while (receive_check := self.com1.overhead_read()) == "Chunk has an error." and retries < retry_limit:
-                    retries += 1
-                    self.com1.send_bytes(chunk)
-                    print(f"Retrying chunk {i}, attempt {retries}")
-                
-                self.onboard_LED.off()
+                print(f"Retrying chunk {i}, attempt {retries}")
+            
+            self.onboard_LED.off()
 
-            print("All requested chunks sent successfully.")
+        print("All requested chunks sent successfully.")
 
     def wait_for_command(self):
+        index = 1  # Start the index for each state of health record
         while True:
             dog.pet()
             print("Checking for command from FCB...")
@@ -171,17 +183,53 @@ class PCB:
                     pass  
                 elif command_name == 'hreset':
                     print("Resetting hardware.")
+                    reset()
                 elif command_name == 'shutdown':
                     print("Shutting down.")
                 elif command_name == 'query':
                     print("Processing query.")
+                elif command_name == 'send_SOH':
+                    print("Sending State of Health")
+                    import current_sense as amp
+                    # Get current values for camera and display
+                    display_current = amp.get_average_current("display")
+                    camera_current = amp.get_average_current("camera")
+                    
+                    # Index the data instead of using a timestamp
+                    # Format index like "Index: 1", "Index: 2", etc.
+                    indexed_data = f"Index: {index} - Display Current: {display_current:.2f} A, Camera Current: {camera_current:.2f} A"
+                    
+                    # Print the data to the shell
+                    print(f"Display current: {display_current:.2f} A")
+                    print(f"Camera current: {camera_current:.2f} A")
+                    
+                    # Send the data over UART to FCB
+                    self.com1.overhead_send(indexed_data.encode())  # Sending data over UART
+                    
+                    # Write data to housekeeping file with index
+                    housekeeping_file_path = '/sd/housekeeping.txt'
+                    try:
+                        with open(housekeeping_file_path, 'a') as file:
+                            # Append the indexed data to the file
+                            file.write(f"{indexed_data}\n")
+                            print(f"SOH data with index written to {housekeeping_file_path}")
+                        
+                        # Increment the index for the next entry
+                        index += 1
+
+                    except OSError as e:
+                        print(f"Error writing to housekeeping file: {e}")
+                            
                 elif command_name == 'take_pic':
-                    print("Taking a picture.")
-                    self.display_image('RaspberryPiWB128x128.raw')
+                    print("Displaying image...")
+                    time.sleep(1)
+                    self.display_image("RaspberryPiWB128x128.raw")
+                    time.sleep(1)
                     count = (self.last_num + 2) - self.last_num
+                    print("Taking a picture.")
                     self.TakePicture(f'inspireFly_Capture_{self.last_num}', '320x240')
                 elif command_name == 'send_pic':
-                    file_path = f"/sd/inspireFly_Capture_{self.last_num}.jpg"
+                    file_path = f"/sd/inspireFly_Capture_{self.last_num - 1}.jpg"
                     try:
                         with open(file_path, "rb") as file:
                             jpg_bytes = file.read()
@@ -194,3 +242,4 @@ class PCB:
                 print(f"Unknown command received: {command}")
 
             time.sleep(0.5)
+

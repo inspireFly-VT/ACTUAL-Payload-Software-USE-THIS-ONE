@@ -77,6 +77,7 @@ class Easy_comms:
         start_time = time.time()
         
         while True:
+            print('Waiting for acknowledgment')
             acknowledgment = self.overhead_read()
             
             if acknowledgment == 'acknowledge':

@@ -412,7 +412,7 @@ class Camera:
         input_string_lower = new_resolution.lower()        
         if self.camera_idx == '3MP':
             if input_string_lower in self.valid_3mp_resolutions:
-                self.current_resolution_setting = self.valid_3mp_resolutions[input_string_lower]
+                self.current_resolution_setting = self.valid_3mp_resolutions['128X128']
             else:
                 raise ValueError("Invalid resolution provided for {}, please select from {}".format(self.camera_idx, list(self.valid_3mp_resolutions.keys())))
 
